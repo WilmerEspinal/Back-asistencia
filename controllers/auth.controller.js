@@ -4,14 +4,19 @@ const { signToken } = require('../middlewares/auth');
 
 async function register(req, res) {
   console.log('Body completo:', req.body);
-  const { nombre, apellido, email, telefono, fecha_nacimiento, codigo_empleado, username, password, fecha_ingreso, rol_id, rolId } = req.body;
+  const { dni, nombre, apellido, email, telefono, fecha_nacimiento, codigo_empleado, username, password, fecha_ingreso, rol_id, rolId } = req.body;
   
   // Usar rol_id o rolId (por si viene con diferente nombre)
   const rolFinal = rol_id || rolId || 1; // Por defecto rol 1 (Empleado)
   console.log('Rol asignado:', rolFinal);
   
-  if (!nombre || !apellido || !email || !codigo_empleado || !username || !password || !fecha_ingreso) {
-    return res.status(400).json({ message: 'Campos requeridos faltantes' });
+  if (!dni || !nombre || !apellido || !email || !codigo_empleado || !username || !password || !fecha_ingreso) {
+    return res.status(400).json({ message: 'Campos requeridos faltantes (DNI, nombre, apellido, email, codigo_empleado, username, password, fecha_ingreso)' });
+  }
+
+  // Validar formato del DNI
+  if (!/^\d{8}$/.test(dni)) {
+    return res.status(400).json({ message: 'El DNI debe tener exactamente 8 dígitos numéricos' });
   }
   
   const pool = await getPool();
@@ -19,8 +24,8 @@ async function register(req, res) {
   try {
     await conn.beginTransaction();
     
-    const [p] = await conn.query('INSERT INTO personas (nombre, apellido, email, telefono, fecha_nacimiento) VALUES (?,?,?,?,?)', [
-      nombre, apellido, email, telefono || null, fecha_nacimiento || null
+    const [p] = await conn.query('INSERT INTO personas (dni, nombre, apellido, email, telefono, fecha_nacimiento) VALUES (?,?,?,?,?,?)', [
+      dni, nombre, apellido, email, telefono || null, fecha_nacimiento || null
     ]);
     const personaId = p.insertId;
     console.log('Persona creada con ID:', personaId);
@@ -42,6 +47,7 @@ async function register(req, res) {
         u.activo,
         u.rol_id,
         p.id as persona_id,
+        p.dni,
         p.nombre,
         p.apellido,
         p.email,

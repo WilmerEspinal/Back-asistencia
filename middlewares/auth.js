@@ -50,12 +50,33 @@ function requireAdmin(req, res, next) {
   return requireRole([1])(req, res, next);
 }
 
+// Middleware para verificar si es supervisor (rol 2) ÚNICAMENTE
+function requireSupervisor(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Usuario no autenticado' });
+  }
+  
+  const userRole = req.user.rol_id;
+  
+  // Solo permitir rol_id = 2 (Supervisor)
+  if (userRole !== 2) {
+    return res.status(403).json({ 
+      message: 'Acceso denegado. Solo supervisores pueden acceder a este recurso.',
+      required: 'Supervisor (rol_id: 2)',
+      current: `rol_id: ${userRole}`
+    });
+  }
+  
+  next();
+}
+
 module.exports = { 
   signToken, 
   authRequired, 
   requireRole, 
   requireAdminOrSupervisor, 
-  requireAdmin 
+  requireAdmin,
+  requireSupervisor
 };
 
 
